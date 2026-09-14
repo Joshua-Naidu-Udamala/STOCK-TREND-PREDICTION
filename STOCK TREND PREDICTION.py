@@ -1,0 +1,62 @@
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+
+
+def predict_stock():
+    print("--- Stock Trend Predictor ---")
+    print("For Indian Stocks, add '.NS' (e.g., RELIANCE.NS)")
+    print("For NIFTY 50, use '^NSEI'")
+
+    ticker_input = input("Enter Ticker Symbol: ").upper()
+
+    try:
+        # Download data until today
+        print(f"Downloading data for {ticker_input}...")
+        data = yf.download(ticker_input, period="2y", interval="1d")
+
+        if data.empty:
+            print("Error: No data found. Did you forget '.NS' for an Indian stock?")
+            return
+
+        # Prepare Data
+        # Use flatten() to avoid the 'numpy.ndarray' formatting error
+        data['Days'] = np.arange(len(data))
+        X = data[['Days']].values
+        y = data['Close'].values.flatten()
+
+        # Model Training
+        model = LinearRegression()
+        model.fit(X, y)
+        trend_line = model.predict(X)
+
+        # Plotting
+        plt.figure(figsize=(12, 6))
+        plt.plot(data.index, y, label='Actual Price', color='blue', alpha=0.6)
+        plt.plot(data.index, trend_line, label='Trend Line', color='red', linewidth=2)
+
+        plt.title(f"Trend Prediction: {ticker_input}")
+        plt.xlabel("Date")
+        plt.ylabel("Price")
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.show()
+
+        # Output Results
+        current_price = y[-1]
+        next_day_pred = model.predict([[len(data)]])[0]
+
+        print("\n" + "=" * 30)
+        print(f"RESULTS FOR {ticker_input}")
+        print(f"Latest Close Price: {current_price:.2f}")
+        print(f"Next Predicted Trend: {next_day_pred:.2f}")
+        print("=" * 30)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+if __name__ == "__main__":
+    predict_stock()
